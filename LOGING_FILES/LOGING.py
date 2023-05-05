@@ -57,6 +57,13 @@ def post_loging_calc():
                     expected_return_postion += -(POSITION.price * 100 * POSITION.shares) * 0.5
                     # maximum_loss += -(POSITION.price * 100 * POSITION.shares) * 0.7
 
+            if POSITION.strategy == 'VIX CALL BACKSPREAD HEDGE':
+                if POSITION.side == 'SLD':
+                    expected_return_postion += 0
+                    # maximum_loss += (POSITION.price * 100 * POSITION.shares) * 0.7
+                if POSITION.side == 'BOT':
+                    expected_return_postion += 0
+                    # maximum_loss += -(POSITION.price * 100 * POSITION.shares) * 0.7
 
         expected_return_list += [abs(expected_return_postion)] * len(LOG_POSITIONS)
         maximum_loss_list += [-abs(maximum_loss)] * len(LOG_POSITIONS)

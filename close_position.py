@@ -11,21 +11,6 @@ import yfinance as yf
 from VIX_market_stage import market_stage_vix
 
 
-def check_pnl(account, conId):
-
-    tempObj = ib.reqPnLSingle(account,  modelCode='', conId=conId, )
-
-    while math.isnan(tempObj.realizedPnL):
-        # print(tempObj.realizedPnL)
-        # print(tempObj)
-        ib.waitOnUpdate()
-    print(tempObj)
-    ib.cancelPnLSingle(account, modelCode='', conId=conId)
-
-    return tempObj
-
-
-
 async def check_to_close(ib, vix_df):
     await asyncio.sleep(30)
     # while True:
@@ -129,9 +114,10 @@ async def check_to_close(ib, vix_df):
 
 
             if POSITION.strategy == 'VIX CALL BACKSPREAD HEDGE':
-
                 if (date_to_close_exp - datetime.datetime.now()).days <= (date_to_close_exp - POSITION.time).days / 2 or vix_signal == 3:
-
+                    print('AAAAAA', vix_signal)
+                    print((date_to_close_exp - datetime.datetime.now()).days)
+                    print((date_to_close_exp - POSITION.time).days / 2)
                     if POSITION.side == 'SLD':
                         what_to_do = 'Buy'
                     else:
