@@ -81,7 +81,7 @@ async def check_to_close(ib, vix_df):
 
             date_to_close_exp = POSITION.date_to_close
 
-            if postition_pnl >= POSITION.expected_return or datetime.datetime.now().date() == date_to_close_exp or postition_pnl < POSITION.maximum_loss:
+            if postition_pnl >= POSITION.expected_return or datetime.datetime.now().date() == date_to_close_exp or postition_pnl < POSITION.maximum_loss and POSITION.strategy != 'VIX CALL BACKSPREAD HEDGE':
 
                 if POSITION.side == 'SLD':
                     what_to_do = 'Buy'
@@ -107,7 +107,6 @@ async def check_to_close(ib, vix_df):
                 print('POSITION IS CLOSED!')
                 # print(POSITION)
                 print(POSITION.contract)
-
 
                 # loging
                 logging_close(trade_new, POSITION.contract, order_new, POSITION.strategy, POSITION.conId, POSITION.hard_position, ib, postition_pnl)
