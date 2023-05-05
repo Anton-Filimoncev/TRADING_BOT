@@ -9,9 +9,9 @@ from LOGING_FILES.LOGING import logging_open, post_loging_calc
 from VIX_market_stage import market_stage_vix
 
 
-
 async def spy_put_credit_spread_strat(ib, vix_df, input_data):
     strategy = 'SPY PUT CREDIT SPREAD'
+    print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
 
     tick = current_input_data.Stock.values[0]
@@ -29,19 +29,19 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
 
     contract = Stock(tick, 'SMART', 'USD')
 
-    print(f'------- {tick} --------')
+    # print(f'------- {tick} --------')
 
     bars = ib.reqHistoricalData(
         contract, endDateTime='', durationStr='365 D',
         barSizeSetting='1 day', whatToShow='OPTION_IMPLIED_VOLATILITY', useRTH=True)
 
-    print(bars)
+    # print(bars)
     df_iv = util.df(bars)
 
     df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
         lambda x: stats.percentileofscore(x, x.iloc[-1]))
     IV_percentile = df_iv['IV_percentile'].iloc[-1]
-    print('IV_percentile', IV_percentile)
+    # print('IV_percentile', IV_percentile)
 
     # получение айдишника тикера
     bars_id = ib.qualifyContracts(contract)
@@ -55,7 +55,7 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
     [ticker] = ib.reqTickers(ticker_contract)
 
     current_price = ticker.marketPrice()
-    print('current_price', current_price)
+    # print('current_price', current_price)
 
     # УСЛОВИЯ ВХОДА
     if current_price > sma_100 and sma_20 > sma_100 and 30 < rsi < 70 and IV_percentile > 50:
@@ -69,8 +69,8 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
             chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
             expirations_filter_list_date, expirations_filter_list_strike = get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price)
-            print('expirations_filter_list_date', expirations_filter_list_date)
-            print('expirations_filter_list_strike', expirations_filter_list_strike)
+            # print('expirations_filter_list_date', expirations_filter_list_date)
+            # print('expirations_filter_list_strike', expirations_filter_list_strike)
 
             time.sleep(4)
 
@@ -82,8 +82,8 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
 
             contracts = ib.qualifyContracts(*contracts)
             tickers = ib.reqTickers(*contracts)
-            print('tickers')
-            print(tickers)
+            # print('tickers')
+            # print(tickers)
             df_chains = chain_converter(tickers)
 
             # РАБОТАЕМ С ДАТАСЕТОМ ЦЕН НА ОПЦИОНЫ
@@ -144,12 +144,12 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
                     ib.waitOnUpdate()
                 ib.sleep(5)
                 await asyncio.sleep(5)
-                print('shares')
-                print(atm_put_position)
-                print(atm_put_1_abobe_position)
+                # print('shares')
+                # print(atm_put_position)
+                # print(atm_put_1_abobe_position)
 
                 logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position,
                                        ib, condition, time_to_exp_sell)
-                print('end while')
+                # print('end while')
 
                 post_loging_calc()

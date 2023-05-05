@@ -17,6 +17,7 @@ from VIX_market_stage_2_year import market_stage_vix_2_year
 
 async def vix_short_put(ib, vix_df, input_data):
     strategy = 'VIX SHORT PUT'
+    print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
 
     tick = current_input_data.Stock.values[0]
@@ -34,20 +35,20 @@ async def vix_short_put(ib, vix_df, input_data):
     contract = Stock(tick, 'CBOE', 'USD')
     contract.secType = "IND"
 
-    print(f'~~~~~ {tick} ~~~~~')
+    # print(f'~~~~~ {tick} ~~~~~')
 
     bars = ib.reqHistoricalData(
         contract, endDateTime='', durationStr='365 D',
         barSizeSetting='1 day', whatToShow='OPTION_IMPLIED_VOLATILITY', useRTH=True)
-
-    print(bars)
+    #
+    # print(bars)
     df_iv = util.df(bars)
 
-    print(df_iv.columns.tolist())
+    # print(df_iv.columns.tolist())
     df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
         lambda x: stats.percentileofscore(x, x.iloc[-1]))
 
-    print('IV_percentile', df_iv['IV_percentile'].iloc[-1])
+    # print('IV_percentile', df_iv['IV_percentile'].iloc[-1])
 
     # df_iv['IV_percentile'].iloc[-1] = 90
 
@@ -56,8 +57,8 @@ async def vix_short_put(ib, vix_df, input_data):
 
     df_bars_id = util.df(bars_id)
     ticker_id = df_bars_id['conId'].values[0]
-    print(df_bars_id)
-    print(ticker_id)
+    # print(df_bars_id)
+    # print(ticker_id)
 
     ticker_contract = Index(conId=ticker_id, symbol=tick, exchange='CBOE', currency='USD', localSymbol=tick)
     # ticker_contract = Index('SPY', 'CBOE')
@@ -68,13 +69,13 @@ async def vix_short_put(ib, vix_df, input_data):
 
     [ticker] = ib.reqTickers(ticker_contract)
 
-    print('ticker', ticker)
+    # print('ticker', ticker)
 
     current_price = ticker.marketPrice()
 
     vix_signal, vix_percentile = market_stage_vix_2_year(vix_df)
 
-    print('current_price', current_price)
+    # print('current_price', current_price)
 
     # УСЛОВИЯ ВХОДА
     if vix_signal == 1:
@@ -86,8 +87,8 @@ async def vix_short_put(ib, vix_df, input_data):
             chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
             expirations_filter_list_date, expirations_filter_list_strike = get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price)
-            print('expirations_filter_list_date', expirations_filter_list_date)
-            print('expirations_filter_list_strike', expirations_filter_list_strike)
+            # print('expirations_filter_list_date', expirations_filter_list_date)
+            # print('expirations_filter_list_strike', expirations_filter_list_strike)
 
             time.sleep(4)
 
@@ -115,7 +116,7 @@ async def vix_short_put(ib, vix_df, input_data):
 
             else:
                 # print(fdasfas)
-                print('-' * 100)
+                # print('-' * 100)
                 # print('contract_to_buy', contract_to_buy)
                 print('contract_to_sell', contract_to_sell)
 
@@ -126,7 +127,7 @@ async def vix_short_put(ib, vix_df, input_data):
                 days_to_exp = (datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
                                                           "%Y%m%d") - datetime.datetime.now()).days
                 time_to_exp_sell = exp_contract_to_sell - relativedelta(days=int(days_to_exp / 2))
-                print('time_to_exp_sell')
+                # print('time_to_exp_sell')
 
                 # чекаем последний айдишник сложных позиций
                 try:
@@ -141,8 +142,8 @@ async def vix_short_put(ib, vix_df, input_data):
                     ib.waitOnUpdate()
                 ib.sleep(15)
                 await asyncio.sleep(5)
-                print('shares')
-                print(atm_short_position)
+                # print('shares')
+                # print(atm_short_position)
 
                 logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position, ib,
                                        condition, time_to_exp_sell)
