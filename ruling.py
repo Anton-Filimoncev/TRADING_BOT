@@ -1,15 +1,15 @@
 import pandas as pd
-import numpy as np
+# import numpy as np
 from ib_insync import *
 import asyncio
-import scipy.stats as stats
-import datetime
+# import scipy.stats as stats
+# import datetime
 import time
-from dateutil.relativedelta import relativedelta
-from VIX_market_stage import market_stage_vix
+# from dateutil.relativedelta import relativedelta
+# from VIX_market_stage import market_stage_vix
 import yfinance as yf
 from support import check_time
-import pickle
+# import pickle
 from STRAT.SPY_CALL_DEBET_SPREAD import spy_call_debet_spread_strat
 from STRAT.SPY_PUT_CREDIT_SPREAD import spy_put_credit_spread_strat
 from STRAT.VIX_CALL_BACKSPREAD_HEDGE import vix_call_backspread_hedge
@@ -18,10 +18,11 @@ from STRAT.VIX_SHORT_PUT import vix_short_put
 from close_position import check_to_close
 # from support import *
 import nest_asyncio
+pd.options.mode.chained_assignment = None  # default='warn'
 nest_asyncio.apply()
 
 
-from contextvars import ContextVar
+# from contextvars import ContextVar
 
 ib = IB()
 try:
@@ -107,4 +108,4 @@ if __name__ == '__main__':
         # проверка времени выполнения цикла
         if check_time_signal != 'work_time':
             print('ZZZZZZZZZZZZzzzzzzzzzzzzzzzzzzzz')
-            await asyncio.sleep(3600)
+            time.sleep(3600)
