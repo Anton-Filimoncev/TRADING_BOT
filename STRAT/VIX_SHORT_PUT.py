@@ -25,6 +25,10 @@ async def vix_short_put(ib, vix_df, input_data):
     stock_price_df_native = yf.download('^VIX')
     sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
 
+    # ДАТЫ ЭКСПИРАЦИИ
+    limit_date_min = datetime.datetime.now() + relativedelta(days=+25)
+    limit_date_max = datetime.datetime.now() + relativedelta(days=+60)
+
     contract = Stock(tick, 'CBOE', 'USD')
     contract.secType = "IND"
 
@@ -36,12 +40,6 @@ async def vix_short_put(ib, vix_df, input_data):
 
     print(bars)
     df_iv = util.df(bars)
-
-    # bars_hist = ib.reqHistoricalData(
-    #     contract, endDateTime='', durationStr='365 D',
-    #     barSizeSetting='1 day', whatToShow='HISTORICAL_VOLATILITY', useRTH=True)
-    #
-    # hist_volatility = util.df(bars_hist)['close']
 
     print(df_iv.columns.tolist())
     df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
@@ -85,38 +83,8 @@ async def vix_short_put(ib, vix_df, input_data):
 
             chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
-            expirations_filter_list_date = []
-            expirations_filter_list_strike = []
-            print('0')
-
-            # фильтрация будущих контрактов по времени
-            for exp in chain.expirations:
-
-                year = exp[:4]
-                month = exp[4:6]
-                day = exp[6:]
-                date = year + '-' + month + '-' + day
-                datime_date = datetime.datetime.strptime(date, "%Y-%m-%d")
-
-                if datime_date > datetime.datetime.now() + relativedelta(
-                        days=25) and datime_date < datetime.datetime.now() + relativedelta(days=60):
-                    expirations_filter_list_date.append(exp)
-
+            expirations_filter_list_date, expirations_filter_list_strike = get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price)
             print('expirations_filter_list_date', expirations_filter_list_date)
-
-            print('strikes', chain.strikes)
-            print('expirations', chain.expirations)
-            # фильтрация страйков относительно текущей цены
-            time.sleep(4)
-
-            for strikus in chain.strikes:
-                if strikus > current_price * 0.5 and strikus < current_price * 1.5:
-                    expirations_filter_list_strike.append(strikus)
-
-            # nearest_equal(chain.strikes.tolist(), current_price)
-            #
-            # expirations_filter_list_strike.append(nearest_equal(chain.strikes.tolist(), current_price))
-
             print('expirations_filter_list_strike', expirations_filter_list_strike)
 
             time.sleep(4)
@@ -132,34 +100,17 @@ async def vix_short_put(ib, vix_df, input_data):
             contracts = ib.qualifyContracts(*contracts)
 
             tickers = ib.reqTickers(*contracts)
-            print('tickers')
-            print(tickers)
-            # df_chains = util.df(tickers)
+
+            # РАБОТАЕМ С ДАТАСЕТОМ ЦЕН НА ОПЦИОНЫ
             df_chains = chain_converter(tickers)
-
-            # фильтруем по ликвидности
-            # df_chains = df_chains[df_chains['volume'] > 0]
-            # df_chains.to_excel('chains.xlsx')
-
             atm_strike = nearest_equal(df_chains['Strike'].tolist(), current_price)
             atm_put = df_chains[df_chains['Strike'] == atm_strike].reset_index(drop=True).iloc[0]
 
-            # df_chains_local = df_chains.sort_values('Strike', ascending=True).reset_index(drop=True)
-            # atm_5_above_strike = df_chains_local[df_chains_local['Strike'] > atm_strike].reset_index(drop=True).iloc[4]
-            #
-            # contract_to_buy = atm_5_above_strike['contract']
             contract_to_sell = atm_put['contract']
+            contract_to_buy = None
 
-            # создаем теоретическую позицию для проверки на наличие такой же уже открытой
-
-            theoretical_position = pd.DataFrame()
-            theoretical_position['contract'] = [contract_to_sell]
-            print('-' * 100)
-            print('theoretical_position')
-            print(theoretical_position)
-
-            # дропаем тикер если такая позиция уже открыта
-            if check_to_open(theoretical_position, strategy, tick):
+            #  Eсли такая позиция уже открыта True
+            if check_to_open(contract_to_buy, contract_to_sell, strategy, tick):
                 pass
 
             else:
@@ -169,11 +120,6 @@ async def vix_short_put(ib, vix_df, input_data):
                 print('contract_to_sell', contract_to_sell)
 
                 # ---- время закрытия позиции
-
-                # exp_exp_date_buy = datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth, "%Y%m%d")
-                # days_to_exp = (datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth, "%Y%m%d") - datetime.datetime.now()).days
-                # time_to_exp_buy = exp_exp_date_buy - relativedelta(days=int(days_to_exp/2))
-                # print('time_to_exp_buy')
 
                 exp_contract_to_sell = datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
                                                                   "%Y%m%d")
@@ -189,15 +135,7 @@ async def vix_short_put(ib, vix_df, input_data):
                 except:
                     hard_position = 1
 
-                # order_buy = MarketOrder("Buy", atm_short_position)
-                # trade_buy = ib.placeOrder(contract_to_buy, order_buy)
-                # while not trade_buy.isDone():
-                #     ib.waitOnUpdate()
-                # ib.sleep(5)
-                # await asyncio.sleep(5)
-                # logg_df = logging_open(trade_buy, contract_to_buy, order_buy, strategy, hard_position, ib, condition, time_to_exp_buy)
-
-                order_sell = MarketOrder("Sell", atm_call_5_abobe_position)
+                order_sell = MarketOrder("Sell", atm_short_position)
                 trade_sell = ib.placeOrder(contract_to_sell, order_sell)
                 while not trade_sell.isDone():
                     ib.waitOnUpdate()
@@ -205,10 +143,7 @@ async def vix_short_put(ib, vix_df, input_data):
                 await asyncio.sleep(5)
                 print('shares')
                 print(atm_short_position)
-                print(atm_call_5_abobe_position)
 
                 logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position, ib,
                                        condition, time_to_exp_sell)
-                print('end while')
-
                 post_loging_calc()

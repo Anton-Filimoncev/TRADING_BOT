@@ -86,7 +86,10 @@ def chain_converter(tickers):
 
     return df_chains
 
-def check_to_open(theoretical_position, strategy, tick):
+def check_to_open(contract_to_buy, contract_to_sell, strategy, tick):
+    # создаем теоретическую позицию для проверки на наличие такой же уже открытой
+    theoretical_position = pd.DataFrame()
+    theoretical_position['contract'] = [contract_to_buy, contract_to_sell]
 
     # проверяем сложную позицию на наличие такой же сложной позиции в логе открытых позиций
     try:
@@ -123,6 +126,32 @@ def get_tech_data(df):
 
     return sma_20, sma_100, rsi
 
-def get_ib_market_price():
+# def get_ib_market_price():
 
+def get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price):
+    expirations_filter_list_date = []
+    expirations_filter_list_strike = []
+
+    # фильтрация будущих контрактов по времени
+    for exp in chain.expirations:
+        year = exp[:4]
+        month = exp[4:6]
+        day = exp[6:]
+        date = year + '-' + month + '-' + day
+        datime_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+
+        if datime_date > limit_date_min and datime_date < limit_date_max:
+            expirations_filter_list_date.append(exp)
+
+    # print('expirations_filter_list_date', expirations_filter_list_date)
+    print('strikes', chain.strikes)
+    print('expirations', chain.expirations)
+    # фильтрация страйков относительно текущей цены
+    time.sleep(4)
+
+    for strikus in chain.strikes:
+        if strikus > current_price * 0.5 and strikus < current_price * 1.5:
+            expirations_filter_list_strike.append(strikus)
+
+    return expirations_filter_list_date, expirations_filter_list_strike
 

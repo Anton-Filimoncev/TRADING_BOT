@@ -22,6 +22,10 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
     atm_call_position = current_input_data.Long.values[0]
     atm_call_1_above_position = current_input_data.Short.values[0]
 
+    # ДАТЫ ЭКСПИРАЦИИ
+    limit_date_min = datetime.datetime.now() + relativedelta(days=+35)
+    limit_date_max = datetime.datetime.now() + relativedelta(days=+60)
+
     contract = Stock(tick, 'SMART', 'USD')
 
     print(f'------- {tick} --------')
@@ -32,12 +36,6 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
 
     print(bars)
     df_iv = util.df(bars)
-
-    # bars_hist = ib.reqHistoricalData(
-    #     contract, endDateTime='', durationStr='365 D',
-    #     barSizeSetting='1 day', whatToShow='HISTORICAL_VOLATILITY', useRTH=True)
-    #
-    # hist_volatility = util.df(bars_hist)['close']
 
     print(df_iv.columns.tolist())
     df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
@@ -91,38 +89,11 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
 
                     chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
-                    expirations_filter_list_date = []
-                    expirations_filter_list_strike = []
-                    print('0')
-
-                    # фильтрация будущих контрактов по времени
-                    for exp in chain.expirations:
-
-                        year = exp[:4]
-                        month = exp[4:6]
-                        day = exp[6:]
-                        date = year + '-' + month + '-' + day
-                        datime_date = datetime.datetime.strptime(date, "%Y-%m-%d")
-
-                        if datime_date > datetime.datetime.now() + relativedelta(
-                                days=35) and datime_date < datetime.datetime.now() + relativedelta(days=60):
-                            expirations_filter_list_date.append(exp)
-
+                    expirations_filter_list_date, expirations_filter_list_strike = get_strike_exp_date(chain,
+                                                                                                       limit_date_min,
+                                                                                                       limit_date_max,
+                                                                                                       current_price)
                     print('expirations_filter_list_date', expirations_filter_list_date)
-
-                    print('strikes', chain.strikes)
-                    print('expirations', chain.expirations)
-                    # фильтрация страйков относительно текущей цены
-                    time.sleep(4)
-
-                    for strikus in chain.strikes:
-                        if strikus > current_price * 0.5 and strikus < current_price * 1.5:
-                            expirations_filter_list_strike.append(strikus)
-
-                    # nearest_equal(chain.strikes.tolist(), current_price)
-                    #
-                    # expirations_filter_list_strike.append(nearest_equal(chain.strikes.tolist(), current_price))
-
                     print('expirations_filter_list_strike', expirations_filter_list_strike)
 
                     time.sleep(4)
@@ -138,34 +109,18 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
                     contracts = ib.qualifyContracts(*contracts)
 
                     tickers = ib.reqTickers(*contracts)
-                    print('tickers')
-                    print(tickers)
-                    # df_chains = util.df(tickers)
+
+                    # РАБОТАЕМ С ДАТАСЕТОМ ЦЕН НА ОПЦИОНЫ
                     df_chains = chain_converter(tickers)
-
-                    # фильтруем по ликвидности
-                    # df_chains = df_chains[df_chains['volume'] > 0]
-                    # df_chains.to_excel('chains.xlsx')
-
                     atm_strike = nearest_equal(df_chains['Strike'].tolist(), current_price)
-
                     atm_call = df_chains[df_chains['Strike'] == atm_strike].reset_index(drop=True).iloc[0]
-
                     atm_call_1_abowe = df_chains[df_chains['Strike'] > atm_strike].reset_index(drop=True).iloc[0]
 
                     contract_to_buy = atm_call['contract']
                     contract_to_sell = atm_call_1_abowe['contract']
 
-                    # создаем теоретическую позицию для проверки на наличие такой же уже открытой
-
-                    theoretical_position = pd.DataFrame()
-                    theoretical_position['contract'] = [contract_to_buy, contract_to_sell]
-                    print('-' * 100)
-                    print('theoretical_position')
-                    print(theoretical_position)
-
-                    # дропаем тикер если такая позиция уже открыта
-                    if check_to_open(theoretical_position, strategy, tick):
+                    #  Eсли такая позиция уже открыта True
+                    if check_to_open(contract_to_buy, contract_to_sell, strategy, tick):
                         pass
 
                     else:
