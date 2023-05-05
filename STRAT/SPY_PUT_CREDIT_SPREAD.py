@@ -18,219 +18,189 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
     strategy = 'SPY PUT CREDIT SPREAD'
     current_input_data = input_data[input_data['Strategy'] == strategy]
 
-    while True:  # datetime.datetime.strptime('2022-02-01', "%Y-%m-%d")
+    tick = current_input_data.Stock.values[0]
+    atm_put_position = current_input_data.Long.values[0]
+    atm_put_1_abobe_position = current_input_data.Short.values[0]
 
-        tick = current_input_data.Stock.values[0]
-        atm_put_position = current_input_data.Long.values[0]
-        atm_put_1_abobe_position = current_input_data.Short.values[0]
+    stock_price_df_native = yf.download(tick)
+    sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
 
-        stock_price_df_native = yf.download(tick)
-        sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
+    contract = Stock(tick, 'SMART', 'USD')
 
-        contract = Stock(tick, 'SMART', 'USD')
+    print(f'------- {tick} --------')
 
-        print(f'------- {tick} --------')
+    bars = ib.reqHistoricalData(
+        contract, endDateTime='', durationStr='365 D',
+        barSizeSetting='1 day', whatToShow='OPTION_IMPLIED_VOLATILITY', useRTH=True)
 
-        bars = ib.reqHistoricalData(
-            contract, endDateTime='', durationStr='365 D',
-            barSizeSetting='1 day', whatToShow='OPTION_IMPLIED_VOLATILITY', useRTH=True)
+    print(bars)
+    df_iv = util.df(bars)
 
-        print(bars)
-        df_iv = util.df(bars)
+    # bars_hist = ib.reqHistoricalData(
+    #     contract, endDateTime='', durationStr='365 D',
+    #     barSizeSetting='1 day', whatToShow='HISTORICAL_VOLATILITY', useRTH=True)
+    #
+    # hist_volatility = util.df(bars_hist)['close']
 
-        # bars_hist = ib.reqHistoricalData(
-        #     contract, endDateTime='', durationStr='365 D',
-        #     barSizeSetting='1 day', whatToShow='HISTORICAL_VOLATILITY', useRTH=True)
-        #
-        # hist_volatility = util.df(bars_hist)['close']
+    df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
+        lambda x: stats.percentileofscore(x, x.iloc[-1]))
+    IV_percentile = df_iv['IV_percentile'].iloc[-1]
+    print('IV_percentile', IV_percentile)
 
-        print(df_iv.columns.tolist())
-        df_iv['IV_percentile'] = df_iv['close'].rolling(364).apply(
-            lambda x: stats.percentileofscore(x, x.iloc[-1]))
+    # получение айдишника тикера
+    bars_id = ib.qualifyContracts(contract)
+    df_bars_id = util.df(bars_id)
+    ticker_id = df_bars_id['conId'].values[0]
 
-        print('IV_percentile', df_iv['IV_percentile'].iloc[-1])
+    ticker_contract = Index(conId=ticker_id, symbol=tick, exchange='SMART', currency='USD', localSymbol=tick)
+    # ticker_contract = Index('SPY', 'CBOE')
+    ib.qualifyContracts(ticker_contract)
+    ib.reqMarketDataType(1)
+    [ticker] = ib.reqTickers(ticker_contract)
 
-        # df_iv['IV_percentile'].iloc[-1] = 90
+    current_price = ticker.marketPrice()
+    print('current_price', current_price)
 
-        # получение айдишника тикера
-        bars_id = ib.qualifyContracts(contract)
+    # УСЛОВИЯ ВХОДА
+    if current_price > sma_100 and sma_20 > sma_100:
+        if 30 < rsi < 70:
+            if IV_percentile > 50:
+                vix_signal = market_stage_vix(vix_df)
+                if vix_signal <= 2:
 
-        df_bars_id = util.df(bars_id)
-        ticker_id = df_bars_id['conId'].values[0]
-        print(df_bars_id)
-        print(ticker_id)
+                    condition = [f'IV_percentile {df_iv["IV_percentile"].iloc[-1]} > 50, vix_signal =={vix_signal}'
+                                 f'RSI: {rsi}, price: {current_price} > sma_100: {sma_100},  sma_20: {sma_20} > sma_100: {sma_100}']
 
-        spx = Index(conId=ticker_id, symbol=tick, exchange='SMART', currency='USD', localSymbol=tick)
-        # spx = Index('SPY', 'CBOE')
-        ib.qualifyContracts(spx)
+                    chains = ib.reqSecDefOptParams(ticker_contract.symbol, '', ticker_contract.secType, ticker_contract.conId)
 
-        ib.reqMarketDataType(1)
-        # 1 = Live
-        # 2 = Frozen
-        # 3 = Delayed
-        # 4 = Delayed frozen
+                    chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
-        [ticker] = ib.reqTickers(spx)
+                    expirations_filter_list_date = []
+                    expirations_filter_list_strike = []
 
-        print('ticker', ticker)
+                    # фильтрация будущих контрактов по времени
+                    for exp in chain.expirations:
 
-        current_price = ticker.marketPrice()
+                        year = exp[:4]
+                        month = exp[4:6]
+                        day = exp[6:]
+                        date = year + '-' + month + '-' + day
+                        datime_date = datetime.datetime.strptime(date, "%Y-%m-%d")
 
+                        if datime_date > datetime.datetime.now() + relativedelta(
+                                days=25) and datime_date < datetime.datetime.now() + relativedelta(days=60):
+                            expirations_filter_list_date.append(exp)
 
+                    print('expirations_filter_list_date', expirations_filter_list_date)
+                    print('strikes', chain.strikes)
+                    print('expirations', chain.expirations)
+                    # фильтрация страйков относительно текущей цены
+                    time.sleep(4)
 
-        print('current_price', current_price)
+                    for strikus in chain.strikes:
+                        if strikus > current_price * 0.5 and strikus < current_price * 1.5:
+                            expirations_filter_list_strike.append(strikus)
 
-        if current_price > sma_100 and sma_20 > sma_100:
-            if 30 < rsi < 70:
-                if df_iv['IV_percentile'].iloc[-1] > 50:
-                    vix_signal = market_stage_vix(vix_df)
-                    if vix_signal <= 2:
+                    # nearest_equal(chain.strikes.tolist(), current_price)
+                    #
+                    # expirations_filter_list_strike.append(nearest_equal(chain.strikes.tolist(), current_price))
 
-                        condition = [f'IV_percentile {df_iv["IV_percentile"].iloc[-1]} > 50, vix_signal =={vix_signal}'
-                                     f'RSI: {rsi}, price: {current_price} > sma_100: {sma_100},  sma_20: {sma_20} > sma_100: {sma_100}']
+                    print('expirations_filter_list_strike', expirations_filter_list_strike)
 
-                        chains = ib.reqSecDefOptParams(spx.symbol, '', spx.secType, spx.conId)
+                    time.sleep(4)
 
-                        chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
+                    rights = ['P']
 
-                        expirations_filter_list_date = []
-                        expirations_filter_list_strike = []
-                        print('0')
+                    contracts = [Option(tick, expiration, strike, right, 'SMART', tradingClass=tick)
+                                 for right in rights
+                                 for expiration in [expirations_filter_list_date[0]]
+                                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                 for strike in expirations_filter_list_strike]
 
-                        # фильтрация будущих контрактов по времени
-                        for exp in chain.expirations:
+                    contracts = ib.qualifyContracts(*contracts)
 
-                            year = exp[:4]
-                            month = exp[4:6]
-                            day = exp[6:]
-                            date = year + '-' + month + '-' + day
-                            datime_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+                    tickers = ib.reqTickers(*contracts)
+                    print('tickers')
+                    print(tickers)
+                    # df_chains = util.df(tickers)
+                    df_chains = chain_converter(tickers)
 
-                            if datime_date > datetime.datetime.now() + relativedelta(
-                                    days=25) and datime_date < datetime.datetime.now() + relativedelta(days=60):
-                                expirations_filter_list_date.append(exp)
+                    # фильтруем по ликвидности
+                    # df_chains = df_chains[df_chains['volume'] > 0]
+                    # df_chains.to_excel('chains.xlsx')
 
-                        print('expirations_filter_list_date', expirations_filter_list_date)
+                    atm_strike = nearest_equal(df_chains['Strike'].tolist(), current_price)
+                    atm_put = df_chains[df_chains['Strike'] == atm_strike].reset_index(drop=True).iloc[0]
 
-                        print('strikes', chain.strikes)
-                        print('expirations', chain.expirations)
-                        # фильтрация страйков относительно текущей цены
-                        time.sleep(4)
+                    df_chains_local = df_chains.sort_values('Strike', ascending=True).reset_index(drop=True)
+                    atm_1_above_strike = \
+                    df_chains_local[df_chains_local['Strike'] > atm_strike].reset_index(drop=True).iloc[0]
 
-                        for strikus in chain.strikes:
-                            if strikus > current_price * 0.5 and strikus < current_price * 1.5:
-                                expirations_filter_list_strike.append(strikus)
+                    contract_to_buy = atm_1_above_strike['contract']
+                    contract_to_sell = atm_put['contract']
 
-                        # nearest_equal(chain.strikes.tolist(), current_price)
-                        #
-                        # expirations_filter_list_strike.append(nearest_equal(chain.strikes.tolist(), current_price))
+                    # создаем теоретическую позицию для проверки на наличие такой же уже открытой
 
-                        print('expirations_filter_list_strike', expirations_filter_list_strike)
+                    theoretical_position = pd.DataFrame()
+                    theoretical_position['contract'] = [contract_to_buy, contract_to_sell]
+                    print('-' * 100)
+                    print('theoretical_position')
+                    print(theoretical_position)
 
-                        time.sleep(4)
+                    #  Eсли такая позиция уже открыта True
+                    if check_to_open(theoretical_position, strategy, tick):
+                        pass
 
-                        rights = ['P']
-
-                        contracts = [Option(tick, expiration, strike, right, 'SMART', tradingClass=tick)
-                                     for right in rights
-                                     for expiration in [expirations_filter_list_date[0]]
-                                     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                     for strike in expirations_filter_list_strike]
-
-                        contracts = ib.qualifyContracts(*contracts)
-
-                        tickers = ib.reqTickers(*contracts)
-                        print('tickers')
-                        print(tickers)
-                        # df_chains = util.df(tickers)
-                        df_chains = chain_converter(tickers)
-
-                        # фильтруем по ликвидности
-                        # df_chains = df_chains[df_chains['volume'] > 0]
-                        # df_chains.to_excel('chains.xlsx')
-
-                        atm_strike = nearest_equal(df_chains['Strike'].tolist(), current_price)
-                        atm_put = df_chains[df_chains['Strike'] == atm_strike].reset_index(drop=True).iloc[0]
-
-                        df_chains_local = df_chains.sort_values('Strike', ascending=True).reset_index(drop=True)
-                        atm_1_above_strike = \
-                        df_chains_local[df_chains_local['Strike'] > atm_strike].reset_index(drop=True).iloc[0]
-
-                        contract_to_buy = atm_1_above_strike['contract']
-                        contract_to_sell = atm_put['contract']
-
-                        # создаем теоретическую позицию для проверки на наличие такой же уже открытой
-
-                        theoretical_position = pd.DataFrame()
-                        theoretical_position['contract'] = [contract_to_buy, contract_to_sell]
+                    else:
+                        # print(fdasfas)
                         print('-' * 100)
-                        print('theoretical_position')
-                        print(theoretical_position)
+                        print('contract_to_buy', contract_to_buy)
+                        print('contract_to_sell', contract_to_sell)
 
-                        # дропаем тикер если такая позиция уже открыта
-                        if check_to_open(theoretical_position, strategy, tick):
-                            break
+                        # ---- время закрытия позиции
 
-                        else:
-                            # print(fdasfas)
-                            print('-' * 100)
-                            print('contract_to_buy', contract_to_buy)
-                            print('contract_to_sell', contract_to_sell)
+                        exp_exp_date_buy = datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
+                                                                      "%Y%m%d")
+                        days_to_exp = (datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
+                                                                  "%Y%m%d") - datetime.datetime.now()).days
+                        time_to_exp_buy = exp_exp_date_buy - relativedelta(days=int(days_to_exp / 2))
+                        print('time_to_exp_buy')
 
-                            # ---- время закрытия позиции
+                        exp_contract_to_sell = datetime.datetime.strptime(
+                            contract_to_sell.lastTradeDateOrContractMonth, "%Y%m%d")
+                        days_to_exp = (datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
+                                                                  "%Y%m%d") - datetime.datetime.now()).days
+                        time_to_exp_sell = exp_contract_to_sell - relativedelta(days=int(days_to_exp / 2))
+                        print('time_to_exp_sell')
 
-                            exp_exp_date_buy = datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
-                                                                          "%Y%m%d")
-                            days_to_exp = (datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
-                                                                      "%Y%m%d") - datetime.datetime.now()).days
-                            time_to_exp_buy = exp_exp_date_buy - relativedelta(days=int(days_to_exp / 2))
-                            print('time_to_exp_buy')
+                        # чекаем последний айдишник сложных позиций
+                        try:
+                            MAIN_LOG_FILE = pd.read_csv('LOGING_FILES/LOG_FILE.csv').reset_index(drop=True)
+                            hard_position = MAIN_LOG_FILE['hard_position'].max() + 1
+                        except:
+                            hard_position = 1
 
-                            exp_contract_to_sell = datetime.datetime.strptime(
-                                contract_to_sell.lastTradeDateOrContractMonth, "%Y%m%d")
-                            days_to_exp = (datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
-                                                                      "%Y%m%d") - datetime.datetime.now()).days
-                            time_to_exp_sell = exp_contract_to_sell - relativedelta(days=int(days_to_exp / 2))
-                            print('time_to_exp_sell')
+                        order_buy = MarketOrder("Buy", atm_put_position)
+                        trade_buy = ib.placeOrder(contract_to_buy, order_buy)
+                        while not trade_buy.isDone():
+                            ib.waitOnUpdate()
+                        ib.sleep(5)
+                        await asyncio.sleep(5)
+                        logg_df = logging_open(trade_buy, contract_to_buy, order_buy, strategy, hard_position, ib,
+                                               condition, time_to_exp_buy)
 
-                            # чекаем последний айдишник сложных позиций
-                            try:
-                                MAIN_LOG_FILE = pd.read_csv('LOGING_FILES/LOG_FILE.csv').reset_index(drop=True)
-                                hard_position = MAIN_LOG_FILE['hard_position'].max() + 1
-                            except:
-                                hard_position = 1
+                        order_sell = MarketOrder("Sell", atm_put_1_abobe_position)
+                        trade_sell = ib.placeOrder(contract_to_sell, order_sell)
+                        while not trade_sell.isDone():
+                            ib.waitOnUpdate()
+                        ib.sleep(15)
+                        await asyncio.sleep(5)
+                        print('shares')
+                        print(atm_put_position)
+                        print(atm_put_1_abobe_position)
 
-                            order_buy = MarketOrder("Buy", atm_put_position)
-                            trade_buy = ib.placeOrder(contract_to_buy, order_buy)
-                            while not trade_buy.isDone():
-                                ib.waitOnUpdate()
-                            ib.sleep(5)
-                            await asyncio.sleep(5)
-                            logg_df = logging_open(trade_buy, contract_to_buy, order_buy, strategy, hard_position, ib,
-                                                   condition, time_to_exp_buy)
+                        logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position,
+                                               ib, condition, time_to_exp_sell)
+                        print('end while')
 
-                            order_sell = MarketOrder("Sell", atm_put_1_abobe_position)
-                            trade_sell = ib.placeOrder(contract_to_sell, order_sell)
-                            while not trade_sell.isDone():
-                                ib.waitOnUpdate()
-                            ib.sleep(15)
-                            await asyncio.sleep(5)
-                            print('shares')
-                            print(atm_put_position)
-                            print(atm_put_1_abobe_position)
-
-                            logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position,
-                                                   ib, condition, time_to_exp_sell)
-                            print('end while')
-
-                            post_loging_calc()
-
-        await asyncio.sleep(30)
-
-        check_time_signal = check_time()
-        print('check_time')
-        print(check_time_signal)
-        # проверка времени выполнения цикла
-        if check_time_signal != 'work_time':
-            print('ZZZZZZZZZZZZzzzzzzzzzzzzzzzzzzzz')
-            await asyncio.sleep(3600)
+                        post_loging_calc()

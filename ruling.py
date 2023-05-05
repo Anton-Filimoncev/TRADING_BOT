@@ -8,6 +8,7 @@ import time
 from dateutil.relativedelta import relativedelta
 from VIX_market_stage import market_stage_vix
 import yfinance as yf
+from support import check_time
 import pickle
 from STRAT.SPY_CALL_DEBET_SPREAD import spy_call_debet_spread_strat
 from STRAT.SPY_PUT_CREDIT_SPREAD import spy_put_credit_spread_strat
@@ -98,4 +99,12 @@ if __name__ == '__main__':
     # таблица с кол-вом позиций, тикерами, названиями стратегий и тп
     input_data = pd.read_excel('STRAT/INPUT_STRAT_DATA.xlsx')
 
-    asyncio.run(run(vix_df, input_data))
+    while True:
+        asyncio.run(run(vix_df, input_data))
+        check_time_signal = check_time()
+        print('check_time')
+        print(check_time_signal)
+        # проверка времени выполнения цикла
+        if check_time_signal != 'work_time':
+            print('ZZZZZZZZZZZZzzzzzzzzzzzzzzzzzzzz')
+            await asyncio.sleep(3600)

@@ -89,7 +89,6 @@ def chain_converter(tickers):
 def check_to_open(theoretical_position, strategy, tick):
 
     # проверяем сложную позицию на наличие такой же сложной позиции в логе открытых позиций
-
     try:
         OPEN_POSITIONS = pd.read_csv('LOGING_FILES/OPEN_POSITIONS.csv').reset_index(drop=True)
 
@@ -101,20 +100,15 @@ def check_to_open(theoretical_position, strategy, tick):
             OPEN_POSITIONS_local = OPEN_POSITIONS_local.drop_duplicates('contract')
             if OPEN_POSITIONS_local['contract'].equals(theoretical_position['contract'].astype('str')):
                 postion_is_open = True
-                print('position is already open')
-                print('PPPAAASSSS')
 
-            if strategy == 'SPY CALL DEBET SPREAD' or 'SPY PUT CREDIT SPREAD':
-                if tick in OPEN_POSITIONS_local['symbol'].values.tolist():
-                    print('position is already open')
-                    print('PPPAAASSSS')
-                    postion_is_open = True
+            # if strategy == 'SPY CALL DEBET SPREAD' or 'SPY PUT CREDIT SPREAD':
+            elif tick in OPEN_POSITIONS_local['symbol'].values.tolist():
+                postion_is_open = True
 
     except:
         postion_is_open = False
 
-    print('postion_is_open')
-    print(postion_is_open)
+    print('Postion_is_open: ', postion_is_open)
 
     return postion_is_open
 
@@ -128,5 +122,7 @@ def get_tech_data(df):
     rsi = df['RSI'].iloc[-1]
 
     return sma_20, sma_100, rsi
+
+def get_ib_market_price():
 
 
