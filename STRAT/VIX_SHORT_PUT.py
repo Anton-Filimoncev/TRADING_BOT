@@ -1,18 +1,18 @@
-import pandas as pd
-import numpy as np
-from ib_insync import *
+# import pandas as pd
+# import numpy as np
+# from ib_insync import *
 import asyncio
 import scipy.stats as stats
-import datetime
-import time
-from dateutil.relativedelta import relativedelta
+# import datetime
+# import time
+# from dateutil.relativedelta import relativedelta
 import yfinance as yf
-import pickle
+# import pickle
 from support import *
 from LOGING_FILES.LOGING import logging_open, post_loging_calc
-from VIX_market_stage import market_stage_vix
+# from VIX_market_stage import market_stage_vix
 from VIX_market_stage_2_year import market_stage_vix_2_year
-import pandas_ta as pta
+# import pandas_ta as pta
 
 
 async def vix_short_put(ib, vix_df, input_data):
@@ -28,6 +28,8 @@ async def vix_short_put(ib, vix_df, input_data):
     # ДАТЫ ЭКСПИРАЦИИ
     limit_date_min = datetime.datetime.now() + relativedelta(days=+25)
     limit_date_max = datetime.datetime.now() + relativedelta(days=+60)
+
+    rights = ['P']
 
     contract = Stock(tick, 'CBOE', 'USD')
     contract.secType = "IND"
@@ -88,8 +90,6 @@ async def vix_short_put(ib, vix_df, input_data):
             print('expirations_filter_list_strike', expirations_filter_list_strike)
 
             time.sleep(4)
-
-            rights = ['P']
 
             contracts = [Option(tick, expiration, strike, right, 'SMART', tradingClass=tick)
                          for right in rights

@@ -1,17 +1,13 @@
-import pandas as pd
-import numpy as np
-from ib_insync import *
+# import pandas as pd
+# import numpy as np
+# from ib_insync import *
 import asyncio
 import scipy.stats as stats
-import datetime
-import time
-from dateutil.relativedelta import relativedelta
 import yfinance as yf
-import pickle
 from support import *
 from LOGING_FILES.LOGING import logging_open, post_loging_calc
 from VIX_market_stage import market_stage_vix
-import pandas_ta as pta
+
 
 
 async def spy_put_credit_spread_strat(ib, vix_df, input_data):
@@ -102,7 +98,7 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
             contract_to_sell = atm_put['contract']
 
 
-            #  Eсли такая позиция уже открыта True
+            #  Eсли такая позиция уже открыта = True
             if check_to_open(contract_to_buy, contract_to_sell, strategy, tick):
                 pass
 
@@ -146,7 +142,7 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
                 trade_sell = ib.placeOrder(contract_to_sell, order_sell)
                 while not trade_sell.isDone():
                     ib.waitOnUpdate()
-                ib.sleep(15)
+                ib.sleep(5)
                 await asyncio.sleep(5)
                 print('shares')
                 print(atm_put_position)
