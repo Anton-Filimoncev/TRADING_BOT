@@ -113,6 +113,7 @@ async def vix_short_put(ib, vix_df, input_data):
                 except:
                     hard_position = 1
 
+
                 order_sell = MarketOrder("Sell", atm_short_position)
                 trade_sell = ib.placeOrder(contract_to_sell, order_sell)
                 while not trade_sell.isDone():
