@@ -88,33 +88,10 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
                     condition = [f'IV_percentile {df_iv["IV_percentile"].iloc[-1]} < 50, vix_signal =={vix_signal}'
                                  f'RSI: {rsi}, price: {current_price} > sma_100: {sma_100},  sma_20: {sma_20} > sma_100: {sma_100}']
 
-                    chains = ib.reqSecDefOptParams(ticker_contract.symbol, '', ticker_contract.secType, ticker_contract.conId)
+                    # получаем датасет с ценовыми рядами и греками по опционам
+                    df_chains = get_df_chains(ticker_contract, limit_date_min, limit_date_max, current_price, tick,
+                                              rights, ib)
 
-                    chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
-
-                    expirations_filter_list_date, expirations_filter_list_strike = get_strike_exp_date(chain,
-                                                                                                       limit_date_min,
-                                                                                                       limit_date_max,
-                                                                                                       current_price)
-                    # print('expirations_filter_list_date', expirations_filter_list_date)
-                    # print('expirations_filter_list_strike', expirations_filter_list_strike)
-
-                    time.sleep(4)
-
-
-
-                    contracts = [Option(tick, expiration, strike, right, 'SMART', tradingClass=tick)
-                                 for right in rights
-                                 for expiration in [expirations_filter_list_date[0]]
-                                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                 for strike in expirations_filter_list_strike]
-
-                    contracts = ib.qualifyContracts(*contracts)
-
-                    tickers = ib.reqTickers(*contracts)
-
-                    # РАБОТАЕМ С ДАТАСЕТОМ ЦЕН НА ОПЦИОНЫ
-                    df_chains = chain_converter(tickers)
                     atm_strike = nearest_equal(df_chains['Strike'].tolist(), current_price)
                     atm_call = df_chains[df_chains['Strike'] == atm_strike].reset_index(drop=True).iloc[0]
                     atm_call_1_abowe = df_chains[df_chains['Strike'] > atm_strike].reset_index(drop=True).iloc[0]

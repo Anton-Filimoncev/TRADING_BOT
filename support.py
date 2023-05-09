@@ -128,9 +128,12 @@ def get_tech_data(df):
 
 # def get_ib_market_price():
 
-def get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price):
+def get_df_chains(ticker_contract, limit_date_min, limit_date_max, current_price, tick, rights, ib):
     expirations_filter_list_date = []
     expirations_filter_list_strike = []
+
+    chains = ib.reqSecDefOptParams(ticker_contract.symbol, '', ticker_contract.secType, ticker_contract.conId)
+    chain = next(c for c in chains if c.tradingClass == tick and c.exchange == 'SMART')
 
     # фильтрация будущих контрактов по времени
     for exp in chain.expirations:
@@ -153,5 +156,19 @@ def get_strike_exp_date(chain, limit_date_min, limit_date_max, current_price):
         if strikus > current_price * 0.5 and strikus < current_price * 1.5:
             expirations_filter_list_strike.append(strikus)
 
-    return expirations_filter_list_date, expirations_filter_list_strike
+    time.sleep(4)
+
+    contracts = [Option(tick, expiration, strike, right, 'SMART', tradingClass=tick)
+                 for right in rights
+                 for expiration in [expirations_filter_list_date[0]]
+                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                 for strike in expirations_filter_list_strike]
+
+    contracts = ib.qualifyContracts(*contracts)
+
+    tickers = ib.reqTickers(*contracts)
+
+    df_chains = chain_converter(tickers)
+
+    return df_chains
 
