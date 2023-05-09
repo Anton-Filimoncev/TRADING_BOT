@@ -91,18 +91,11 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
 
                 # ---- время закрытия позиции
 
-                exp_exp_date_buy = datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
-                                                              "%Y%m%d")
-                days_to_exp = (datetime.datetime.strptime(contract_to_buy.lastTradeDateOrContractMonth,
-                                                          "%Y%m%d") - datetime.datetime.now()).days
-                time_to_exp_buy = exp_exp_date_buy - relativedelta(days=int(days_to_exp / 2))
+                exp_exp_date_buy, days_to_exp_buy = get_time_to_exp(contract_to_buy)
+                time_to_exp_buy = exp_exp_date_buy - relativedelta(days=int(days_to_exp_buy / 2))
 
-
-                exp_contract_to_sell = datetime.datetime.strptime(
-                    contract_to_sell.lastTradeDateOrContractMonth, "%Y%m%d")
-                days_to_exp = (datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
-                                                          "%Y%m%d") - datetime.datetime.now()).days
-                time_to_exp_sell = exp_contract_to_sell - relativedelta(days=int(days_to_exp / 2))
+                exp_exp_date_sell, days_to_exp_sell = get_time_to_exp(contract_to_sell)
+                time_to_exp_sell = exp_exp_date_sell - relativedelta(days=int(days_to_exp_sell / 2))
 
                 # чекаем последний айдишник сложных позиций
                 try:

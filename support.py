@@ -172,3 +172,11 @@ def get_df_chains(ticker_contract, limit_date_min, limit_date_max, current_price
 
     return df_chains
 
+def get_time_to_exp(contract):
+    exp_exp_date = datetime.datetime.strptime(contract.lastTradeDateOrContractMonth,
+                                                  "%Y%m%d")
+
+    days_to_exp = (datetime.datetime.strptime(contract.lastTradeDateOrContractMonth,
+                                              "%Y%m%d") - datetime.datetime.now()).days
+
+    return exp_exp_date, days_to_exp

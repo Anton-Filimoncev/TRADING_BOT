@@ -103,12 +103,8 @@ async def vix_short_put(ib, vix_df, input_data):
 
                 # ---- время закрытия позиции
 
-                exp_contract_to_sell = datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
-                                                                  "%Y%m%d")
-                days_to_exp = (datetime.datetime.strptime(contract_to_sell.lastTradeDateOrContractMonth,
-                                                          "%Y%m%d") - datetime.datetime.now()).days
-                time_to_exp_sell = exp_contract_to_sell - relativedelta(days=int(days_to_exp / 2))
-                # print('time_to_exp_sell')
+                exp_exp_date_sell, days_to_exp_sell = get_time_to_exp(contract_to_sell)
+                time_to_exp_sell = exp_exp_date_sell - relativedelta(days=int(days_to_exp_sell / 2))
 
                 # чекаем последний айдишник сложных позиций
                 try:
