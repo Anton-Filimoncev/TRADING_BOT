@@ -140,5 +140,3 @@ async def vix_call_backspread_hedge(ib, vix_df, input_data):
             logg_df = logging_open(trade_sell, contract_to_sell, order_sell, strategy, hard_position, ib, condition,
                                    time_to_exp_sell)
             # print('end while')
-
-            post_loging_calc()

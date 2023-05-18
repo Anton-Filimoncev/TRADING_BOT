@@ -29,7 +29,7 @@ try:
     ib.connect('127.0.0.1', 4002, clientId=12)  # 7496
 
 except:
-    ib.connect('127.0.0.1', 7497, clientId=12)
+    ib.connect('127.0.0.1', 7496, clientId=12)
 
 async def run(vix_df, input_data):
     tasks = [

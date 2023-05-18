@@ -38,29 +38,32 @@ async def check_to_close(ib, vix_df):
             if POSITION_pnl_check.side == 'SLD':
                 what_to_do = 'Buy'
                 call_option_ticker = ib.reqMktData(POSITION_pnl_check.contract, "221", False, False)
-                ib.sleep(3)
-                # print('call_option_ticker SLD')
-                # print(call_option_ticker)
-                # print(POSITION_pnl_check.price)
+                ib.sleep(5)
+                print('call_option_ticker SLD')
+                print(call_option_ticker)
+                print(POSITION_pnl_check.contract)
                 current_option_price = call_option_ticker.ask
-                # print(current_option_price)
+                print('current_option_price')
+                print(current_option_price)
                 postition_pnl += POSITION_pnl_check.price - current_option_price
             else:
                 what_to_do = 'Sell'
                 call_option_ticker = ib.reqMktData(POSITION_pnl_check.contract, "221", False, False)
                 # ib.sleep(3)
-                ib.sleep(3)
-                # print('call_option_ticker BOT')
-                # print(call_option_ticker.bid)
-                # print(POSITION_pnl_check.price)
+                ib.sleep(5)
+                print('call_option_ticker BOT')
+                print(call_option_ticker.bid)
+                print(POSITION_pnl_check.price)
                 current_option_price = call_option_ticker.bid
                 postition_pnl += current_option_price - POSITION_pnl_check.price
+                print('current_option_price')
+                print(current_option_price)
 
             order = MarketOrder(what_to_do, POSITION_pnl_check.shares)
             whatif = ib.whatIfOrder(POSITION_pnl_check.contract, order)
 
-            # print('whatif')
-            # print(whatif.maxCommission)
+            print('whatif')
+            print(whatif.maxCommission)
 
             postition_pnl += (- whatif.maxCommission)
 

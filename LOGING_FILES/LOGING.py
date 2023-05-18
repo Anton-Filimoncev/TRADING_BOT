@@ -5,18 +5,8 @@ import time
 import pickle
 
 
-def post_loging_calc():
-    try:
-        MAIN_LOG_FILE = pd.read_csv('LOGING_FILES/LOG_FILE.csv').reset_index(drop=True)
-        MAIN_LOG_FILE.to_csv('LOGING_FILES/LOG_FILE_backup.csv', index=False)
-        OPEN_POSITIONS = pd.read_csv('LOGING_FILES/OPEN_POSITIONS.csv').reset_index(drop=True)
-        OPEN_POSITIONS.to_csv('LOGING_FILES/OPEN_POSITIONS_backup.csv', index=False)
-        OPEN_POSITIONS_pkl = pd.read_pickle('LOGING_FILES/OPEN_POSITIONS.pkl').reset_index(drop=True)
-    except:
-        MAIN_LOG_FILE = pd.DataFrame()
-        OPEN_POSITIONS = pd.DataFrame()
-        OPEN_POSITIONS_pkl = pd.DataFrame()
-        pass
+def return_loss_calc(MAIN_LOG_FILE):
+
 
     expected_return_list = []
     maximum_loss_list = []
@@ -70,23 +60,8 @@ def post_loging_calc():
 
     print(expected_return_list)
 
-    print(len(expected_return_list))
-    print(len(MAIN_LOG_FILE))
 
-    MAIN_LOG_FILE['expected_return'] = expected_return_list
-    OPEN_POSITIONS['expected_return'] = expected_return_list
-    OPEN_POSITIONS_pkl['expected_return'] = expected_return_list
-
-    MAIN_LOG_FILE['maximum_loss'] = maximum_loss_list
-    OPEN_POSITIONS['maximum_loss'] = maximum_loss_list
-    OPEN_POSITIONS_pkl['maximum_loss'] = maximum_loss_list
-
-    MAIN_LOG_FILE.to_csv('LOGING_FILES/LOG_FILE.csv', index=False)
-    MAIN_LOG_FILE.to_pickle('LOGING_FILES/LOG_FILE_backup.pkl')
-    OPEN_POSITIONS.to_csv('LOGING_FILES/OPEN_POSITIONS.csv', index=False)
-    OPEN_POSITIONS_pkl.to_pickle('LOGING_FILES/OPEN_POSITIONS.pkl')
-
-    # return logg_df
+    return expected_return_list, maximum_loss_list
 
 
 def logging_open(trade, contract_to_pkl, order, strategy, hard_position, ib, condition, time_to_exp):
@@ -145,9 +120,16 @@ def logging_open(trade, contract_to_pkl, order, strategy, hard_position, ib, con
             OPEN_POSITIONS_pkl = pd.DataFrame()
             pass
 
+        expected_return_list, maximum_loss_list = return_loss_calc(MAIN_LOG_FILE)
+
+        logg_df['expected_return'] = expected_return_list
+        logg_df['maximum_loss'] = maximum_loss_list
+
+
         MAIN_LOG_FILE = pd.concat([logg_df, MAIN_LOG_FILE], axis=0, ignore_index=True).reset_index(drop=True)
         OPEN_POSITIONS = pd.concat([logg_df, OPEN_POSITIONS], axis=0, ignore_index=True).reset_index(drop=True)
         OPEN_POSITIONS_pkl = pd.concat([logg_df, OPEN_POSITIONS_pkl], axis=0, ignore_index=True).reset_index(drop=True)
+
 
         MAIN_LOG_FILE.to_csv('LOGING_FILES/LOG_FILE.csv', index=False)
         MAIN_LOG_FILE.to_pickle('LOGING_FILES/LOG_FILE_backup.pkl')
@@ -202,7 +184,8 @@ def logging_close(trade, contract_to_buy, order, strategy, conId, hard_position,
             OPEN_POSITIONS = pd.read_csv('LOGING_FILES/OPEN_POSITIONS.csv').reset_index(drop=True)
             OPEN_POSITIONS.to_csv('LOGING_FILES/OPEN_POSITIONS_backup.csv', index=False)
             OPEN_POSITIONS_pkl = pd.read_pickle('LOGING_FILES/OPEN_POSITIONS.pkl').reset_index(drop=True)
-        except:
+        except Exception as err:
+            print(err)
             MAIN_LOG_FILE = pd.DataFrame()
             OPEN_POSITIONS = pd.DataFrame()
             OPEN_POSITIONS_pkl = pd.DataFrame()

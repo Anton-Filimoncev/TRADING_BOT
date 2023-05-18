@@ -147,5 +147,4 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
                                                ib, condition, time_to_exp_sell)
                         # print('end while')
 
-                        post_loging_calc()
 

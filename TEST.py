@@ -2,52 +2,43 @@ import threading
 import sys
 import time
 from ib_insync import *
+import pandas as pd
+import datetime
 
+OPEN_POSITIONS_pkl = pd.read_pickle('LOGING_FILES/LOG_FILE_backup.pkl').reset_index(drop=True)
 
-
-ib = IB()
-ib.connect('127.0.0.1', 7497, clientId=12)
-# ib.disconnect()
-
-tick = 'VIX'
-
-contract = Stock(tick, 'CBOE', 'USD')
-# contract.exchange = 'CBOE'
-contract.secType = "IND"
+print(OPEN_POSITIONS_pkl.contract[0])
+print(OPEN_POSITIONS_pkl.contract[1])
+print(OPEN_POSITIONS_pkl.contract[2])
+print(OPEN_POSITIONS_pkl.contract[3])
+# OPEN_POSITIONS_pkl.to_pickle('LOGING_FILES/OPEN_POSITIONS.pkl')
+# print(type(Option(conId=584544938, symbol='SPY', lastTradeDateOrContractMonth='20230616', strike=414.0, right='C', multiplier='100', exchange='SMART', currency='USD', localSymbol='SPY   230616C00414000', tradingClass='SPY')))
 #
+#
+# OPEN_POSITIONS_pkl.to_csv('LOGING_FILES/LOG_FILE.csv', index=False)
+# OPEN_POSITIONS_pkl.to_csv('LOGING_FILES/OPEN_POSITIONS.csv', index=False)
+#
+# MAIN_LOG_FILE = pd.read_csv('LOGING_FILES/LOG_FILE.csv').reset_index(drop=True)
 
-print(contract)
-print(f'~~~~~ {tick} ~~~~~')
 
-bars = ib.reqHistoricalData(
-    contract, endDateTime='', durationStr='365 D',
-    barSizeSetting='1 day', whatToShow='OPTION_IMPLIED_VOLATILITY', useRTH=True)
+OPEN_POSITIONS_pkl.contract[0] = Option(conId=584544938, symbol='SPY', lastTradeDateOrContractMonth='20230616', strike=414.0, right='C', multiplier='100', exchange='SMART', currency='USD', localSymbol='SPY   230616C00414000', tradingClass='SPY')
+OPEN_POSITIONS_pkl.contract[1] = Option(conId=584544924, symbol='SPY', lastTradeDateOrContractMonth='20230616', strike=413.0, right='C', multiplier='100', exchange='SMART', currency='USD', localSymbol='SPY   230616C00413000', tradingClass='SPY')
+OPEN_POSITIONS_pkl.contract[2] = Option(conId=588771516, symbol='VIX', lastTradeDateOrContractMonth='20230620', strike=17.0, right='C', multiplier='100', exchange='SMART', currency='USD', localSymbol='VIX   230621C00017000', tradingClass='VIX')
+OPEN_POSITIONS_pkl.contract[3] = Option(conId=588771575, symbol='VIX', lastTradeDateOrContractMonth='20230620', strike=22.0, right='C', multiplier='100', exchange='SMART', currency='USD', localSymbol='VIX   230621C00022000', tradingClass='VIX')
 
-print(bars)
-df_iv = util.df(bars)
+OPEN_POSITIONS_pkl.date_to_close[0] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.date_to_close[0].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.date_to_close[1] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.date_to_close[1].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.date_to_close[2] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.date_to_close[2].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.date_to_close[3] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.date_to_close[3].split(' ')[0], "%Y-%m-%d")
 
-bars_id = ib.qualifyContracts(contract)
-print(bars_id)
-df_bars_id = util.df(bars_id)
-ticker_id = df_bars_id['conId'].values[0]
 
-print('ticker_id', ticker_id)
+OPEN_POSITIONS_pkl.time[0] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.time[0].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.time[1] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.time[1].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.time[2] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.time[2].split(' ')[0], "%Y-%m-%d")
+OPEN_POSITIONS_pkl.time[3] = datetime.datetime.strptime(OPEN_POSITIONS_pkl.time[3].split(' ')[0], "%Y-%m-%d")
 
-spx = Index(conId=ticker_id, symbol=tick, exchange='CBOE', currency='USD', localSymbol=tick)
-# spx = Index('SPY', 'CBOE')
-spx.secType = "IND"
-ib.qualifyContracts(spx)
+# POSITION.time
 
-ib.reqMarketDataType(1)
-# 1 = Live
-# 2 = Frozen
-# 3 = Delayed
-# 4 = Delayed frozen
 
-[ticker] = ib.reqTickers(spx)
-
-print('ticker', ticker)
-
-current_price = ticker.marketPrice()
-
-print('current_price', current_price)
+print(type(OPEN_POSITIONS_pkl.date_to_close[0]))
+OPEN_POSITIONS_pkl.to_pickle('LOGING_FILES/OPEN_POSITIONS.pkl')
