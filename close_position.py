@@ -68,7 +68,7 @@ async def check_to_close(ib, vix_df):
             postition_pnl += (- whatif.maxCommission)
 
         print('---------------------')
-        print('postition_pnl')
+        print('postition_pnl', OPEN_POSITIONS_position.symbol)
         print(postition_pnl)
 
         for index, POSITION in OPEN_POSITIONS_position.iterrows():
