@@ -5,7 +5,7 @@ import asyncio
 import scipy.stats as stats
 import yfinance as yf
 from support import *
-from LOGING_FILES.LOGING import logging_open, post_loging_calc
+from LOGING_FILES.LOGING import logging_open
 from VIX_market_stage import market_stage_vix
 
 
