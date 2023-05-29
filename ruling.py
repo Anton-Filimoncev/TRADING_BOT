@@ -31,13 +31,13 @@ try:
 except:
     ib.connect('127.0.0.1', 7496, clientId=12)
 
-async def run(vix_df, input_data):
+async def run(vix_df, input_data, yahoo_stock):
     tasks = [
-        spy_call_debet_spread_strat(ib, vix_df, input_data),
-        spy_put_credit_spread_strat(ib, vix_df, input_data),
-        vix_call_backspread_hedge(ib, vix_df, input_data),
-        vix_short_put(ib, vix_df, input_data),
-        check_to_close(ib, vix_df),
+        spy_call_debet_spread_strat(ib, vix_df, input_data, yahoo_stock),
+        spy_put_credit_spread_strat(ib, vix_df, input_data, yahoo_stock),
+        vix_call_backspread_hedge(ib, vix_df, input_data, yahoo_stock),
+        vix_short_put(ib, vix_df, input_data, yahoo_stock),
+        check_to_close(ib, vix_df, yahoo_stock),
     ]
 
     await asyncio.gather(*tasks)
@@ -99,12 +99,14 @@ if __name__ == '__main__':
     vix_df = yf.download('^VIX')
     # таблица с кол-вом позиций, тикерами, названиями стратегий и тп
     input_data = pd.read_excel('STRAT/INPUT_STRAT_DATA.xlsx')
+    all_tickers = input_data.Stock.unique()
+    yahoo_stock = yf.download(all_tickers)
 
     while True:
-        asyncio.run(run(vix_df, input_data))
+        asyncio.run(run(vix_df, input_data, yahoo_stock))
         check_time_signal = check_time()
         print('check_time')
-        print(check_time_signal)
+        print(check_time_signal.Stock.unique.tolist())
         # проверка времени выполнения цикла
         if check_time_signal != 'work_time':
             print('ZZZZZZZZZZZZzzzzzzzzzzzzzzzzzzzz')

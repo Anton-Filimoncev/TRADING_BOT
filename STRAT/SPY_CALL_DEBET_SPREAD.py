@@ -14,7 +14,7 @@ from VIX_market_stage import market_stage_vix
 # import pandas_ta as pta
 
 
-async def spy_call_debet_spread_strat(ib, vix_df, input_data):
+async def spy_call_debet_spread_strat(ib, vix_df, input_data, yahoo_stock):
     strategy = 'SPY CALL DEBET SPREAD'
     print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
@@ -72,7 +72,7 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data):
 
     current_price = ticker.marketPrice()
 
-    stock_price_df_native = yf.download(tick)
+    stock_price_df_native = yahoo_stock[tick]
     sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
     # print('current_price', current_price)
 

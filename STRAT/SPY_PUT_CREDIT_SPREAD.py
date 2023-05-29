@@ -9,7 +9,7 @@ from LOGING_FILES.LOGING import logging_open
 from VIX_market_stage import market_stage_vix
 
 
-async def spy_put_credit_spread_strat(ib, vix_df, input_data):
+async def spy_put_credit_spread_strat(ib, vix_df, input_data, yahoo_stock):
     strategy = 'SPY PUT CREDIT SPREAD'
     print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
@@ -18,7 +18,7 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data):
     atm_put_position = current_input_data.Long.values[0]
     atm_put_1_abobe_position = current_input_data.Short.values[0]
 
-    stock_price_df_native = yf.download(tick)
+    stock_price_df_native = yahoo_stock[tick]
     sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
 
     # ДАТЫ ЭКСПИРАЦИИ

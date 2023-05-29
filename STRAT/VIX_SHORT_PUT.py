@@ -15,7 +15,7 @@ from VIX_market_stage_2_year import market_stage_vix_2_year
 # import pandas_ta as pta
 
 
-async def vix_short_put(ib, vix_df, input_data):
+async def vix_short_put(ib, vix_df, input_data, yahoo_stock):
     strategy = 'VIX SHORT PUT'
     print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
@@ -23,7 +23,7 @@ async def vix_short_put(ib, vix_df, input_data):
     tick = current_input_data.Stock.values[0]
     atm_short_position = current_input_data.Short.values[0]
 
-    stock_price_df_native = yf.download('^VIX')
+    stock_price_df_native = vix_df
     sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
 
     # ДАТЫ ЭКСПИРАЦИИ

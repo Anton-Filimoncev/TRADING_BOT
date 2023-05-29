@@ -14,7 +14,7 @@ from VIX_market_stage import market_stage_vix
 # import pandas_ta as pta
 
 
-async def vix_call_backspread_hedge(ib, vix_df, input_data):
+async def vix_call_backspread_hedge(ib, vix_df, input_data, yahoo_stock):
     strategy = 'VIX CALL BACKSPREAD HEDGE'
     print(f'START {strategy} ~~~~~~~~~~~~~~~~~~~~')
     current_input_data = input_data[input_data['Strategy'] == strategy]
@@ -29,7 +29,7 @@ async def vix_call_backspread_hedge(ib, vix_df, input_data):
 
     rights = ['C']
 
-    stock_price_df_native = yf.download('^VIX')
+    stock_price_df_native = vix_df
     sma_20, sma_100, rsi = get_tech_data(stock_price_df_native)
 
     contract = Stock(tick, 'CBOE', 'USD')

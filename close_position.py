@@ -11,7 +11,7 @@ import yfinance as yf
 from VIX_market_stage import market_stage_vix
 
 
-async def check_to_close(ib, vix_df):
+async def check_to_close(ib, vix_df, yahoo_stock):
     await asyncio.sleep(30)
     # while True:
     # try:
