@@ -14,6 +14,10 @@ from STRAT.SPY_CALL_DEBET_SPREAD import spy_call_debet_spread_strat
 from STRAT.SPY_PUT_CREDIT_SPREAD import spy_put_credit_spread_strat
 from STRAT.VIX_CALL_BACKSPREAD_HEDGE import vix_call_backspread_hedge
 from STRAT.VIX_SHORT_PUT import vix_short_put
+
+from STRAT.CREDIT_STRADDLE import credit_straddle_strat
+from STRAT.CALL_DEBET_SPREAD import call_debet_spread_strat
+
 # from LOGING_FILES.LOGING import logging_open
 from close_position import check_to_close
 # from support import *
@@ -33,6 +37,7 @@ except:
 
 async def run(vix_df, input_data, yahoo_stock):
     tasks = [
+
         spy_call_debet_spread_strat(ib, vix_df, input_data, yahoo_stock),
         spy_put_credit_spread_strat(ib, vix_df, input_data, yahoo_stock),
         vix_call_backspread_hedge(ib, vix_df, input_data, yahoo_stock),
