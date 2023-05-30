@@ -43,6 +43,8 @@ async def run(vix_df, input_data, yahoo_stock):
         vix_call_backspread_hedge(ib, vix_df, input_data, yahoo_stock),
         vix_short_put(ib, vix_df, input_data, yahoo_stock),
         check_to_close(ib, vix_df, yahoo_stock),
+        credit_straddle_strat(ib, vix_df, input_data, yahoo_stock),
+        call_debet_spread_strat(ib, vix_df, input_data, yahoo_stock),
     ]
 
     await asyncio.gather(*tasks)
@@ -104,14 +106,17 @@ if __name__ == '__main__':
     vix_df = yf.download('^VIX')
     # таблица с кол-вом позиций, тикерами, названиями стратегий и тп
     input_data = pd.read_excel('STRAT/INPUT_STRAT_DATA.xlsx')
-    all_tickers = input_data.Stock.unique()
-    yahoo_stock = yf.download(all_tickers)
+    # input_data[input_data['Stock'] == 'VIX'] = '^VIX'
+    all_tickers = input_data.Stock.unique().tolist()
 
+    yahoo_stock = yf.download(all_tickers).T.swaplevel().T
+    print(yahoo_stock)
+    print(yahoo_stock.SPY)
     while True:
         asyncio.run(run(vix_df, input_data, yahoo_stock))
         check_time_signal = check_time()
         print('check_time')
-        print(check_time_signal.Stock.unique.tolist())
+        print(check_time_signal)
         # проверка времени выполнения цикла
         if check_time_signal != 'work_time':
             print('ZZZZZZZZZZZZzzzzzzzzzzzzzzzzzzzz')

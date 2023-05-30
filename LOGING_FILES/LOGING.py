@@ -128,7 +128,7 @@ def logging_open(trade, contract_to_pkl, order, strategy, hard_position, ib, con
             OPEN_POSITIONS_pkl = pd.DataFrame()
             pass
 
-        expected_return_list, maximum_loss_list = return_loss_calc(MAIN_LOG_FILE)
+        expected_return_list, maximum_loss_list = return_loss_calc(logg_df)
 
         logg_df['expected_return'] = expected_return_list
         logg_df['maximum_loss'] = maximum_loss_list

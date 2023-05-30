@@ -27,11 +27,11 @@ def nearest_equal_abs(lst, target):
 def needed_strike_delta(all_contract_df, delta, position):
     if position == 'short':
         needed_delta = nearest_equal_abs(all_contract_df['Delta bid'].tolist(), delta)
-        needed_strike = all_contract_df[all_contract_df['Delta bid'] == needed_delta]['strike'].reset_index(drop=True).iloc[0]
+        needed_strike = all_contract_df[all_contract_df['Delta bid'] == needed_delta]['Strike'].reset_index(drop=True).iloc[0]
 
     if position == 'long':
         needed_delta = nearest_equal_abs(all_contract_df['Delta ask'].tolist(), delta)
-        needed_strike = all_contract_df[all_contract_df['Delta ask'] == needed_delta]['strike'].reset_index(drop=True).iloc[0]
+        needed_strike = all_contract_df[all_contract_df['Delta ask'] == needed_delta]['Strike'].reset_index(drop=True).iloc[0]
 
     return needed_strike
 
