@@ -81,10 +81,8 @@ async def spy_call_debet_spread_strat(ib, vix_df, input_data, yahoo_stock):
         if 30 < rsi < 70:
             if df_iv['IV_percentile'].iloc[-1] < 50:
                 vix_signal = market_stage_vix(vix_df)
-                vix_signal = 1
                 # print('vix_signal', vix_signal)
                 if vix_signal <= 2:
-
                     condition = [f'IV_percentile {df_iv["IV_percentile"].iloc[-1]} < 50, vix_signal =={vix_signal}'
                                  f'RSI: {rsi}, price: {current_price} > sma_100: {sma_100},  sma_20: {sma_20} > sma_100: {sma_100}']
 

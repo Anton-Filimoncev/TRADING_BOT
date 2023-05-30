@@ -61,7 +61,6 @@ async def spy_put_credit_spread_strat(ib, vix_df, input_data, yahoo_stock):
     if current_price > sma_100 and sma_20 > sma_100 and 30 < rsi < 70 and IV_percentile > 50:
         vix_signal = market_stage_vix(vix_df)
         if vix_signal <= 2:
-
             condition = [f'IV_percentile {df_iv["IV_percentile"].iloc[-1]} > 50, vix_signal =={vix_signal}'
                          f'RSI: {rsi}, price: {current_price} > sma_100: {sma_100},  sma_20: {sma_20} > sma_100: {sma_100}']
 
