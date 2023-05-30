@@ -55,6 +55,14 @@ def return_loss_calc(MAIN_LOG_FILE):
                     expected_return_postion += 0
                     # maximum_loss += -(POSITION.price * 100 * POSITION.shares) * 0.7
 
+            if POSITION.strategy == 'CREDIT STRADDLE':
+                if POSITION.side == 'SLD':
+                    expected_return_postion += (POSITION.price * 100 * POSITION.shares) * 0.25
+                    maximum_loss += (POSITION.price * 100 * POSITION.shares) * 0.7
+                if POSITION.side == 'BOT':
+                    expected_return_postion += -(POSITION.price * 100 * POSITION.shares) * 0.25
+                    maximum_loss += -(POSITION.price * 100 * POSITION.shares) * 0.7
+
         expected_return_list += [abs(expected_return_postion)] * len(LOG_POSITIONS)
         maximum_loss_list += [-abs(maximum_loss)] * len(LOG_POSITIONS)
 
